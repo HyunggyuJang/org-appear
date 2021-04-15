@@ -84,6 +84,11 @@ Does not have an effect if `org-hidden-keywords' is nil."
 (defvar-local org-appear--timer nil
   "Current active timer.")
 
+(defcustom org-appear-clearlatex nil
+  "Non-nil enables automatic cleaning of Latex inline math blocks."
+  :type 'boolean
+  :group 'org-appear)
+
 ;;;###autoload
 (define-minor-mode org-appear-mode
   "A minor mode that automatically toggles elements in Org mode."
@@ -125,7 +130,8 @@ on an element.")
 			   superscript))
 	(entity-elements '(entity))
 	(link-elements '(link))
-	(keyword-elements '(keyword)))
+	(keyword-elements '(keyword))
+	(latex-elements '(latex-fragment)))
 
     ;; HACK: is there a better way to do this?
     (setq-local org-appear--prev-elem nil)
@@ -139,7 +145,9 @@ on an element.")
     (when (and org-link-descriptive org-appear-autolinks)
       (setq org-appear-elements (append org-appear-elements link-elements)))
     (when (and org-hidden-keywords org-appear-autokeywords)
-      (setq org-appear-elements (append org-appear-elements keyword-elements)))))
+      (setq org-appear-elements (append org-appear-elements keyword-elements)))
+    (when org-appear-clearlatex
+      (setq org-appear-elements (append org-appear-elements latex-elements)))))
 
 (defun org-appear--post-cmd ()
   "This function is executed by `post-command-hook' in `org-appear-mode'.
@@ -233,6 +241,8 @@ Return nil if element cannot be parsed."
 			  'link)
 			 ((eq elem-type 'keyword)
 			  'keyword)
+			 ((eq elem-type 'latex-fragment)
+			  'latex-fragment)
 			 (t nil)))
 	 (elem-start (org-element-property :begin elem))
 	 (elem-end (org-element-property :end elem))
@@ -269,6 +279,8 @@ Return nil if element cannot be parsed."
 	     (decompose-region start end))
 	    ((eq elem-type 'keyword)
 	     (remove-text-properties start end '(invisible org-link)))
+            ((eq elem-type 'entity)
+             (remove-text-properties start end '(invisible composition)))
 	    (t
 	     (remove-text-properties start visible-start '(invisible org-link))
 	     (remove-text-properties visible-end end '(invisible org-link)))))))
