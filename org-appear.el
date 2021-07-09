@@ -298,7 +298,7 @@ When RENEW is non-nil, obtain element at point instead."
 	     (elem-end (org-element-property :end elem)))
     ;; Call `font-lock-ensure' before unhiding to prevent `jit-lock-mode'
     ;; from refontifying the element region after changes in buffer
-    (font-lock-ensure elem-start (1+ elem-end))
+    (font-lock-ensure elem-start (save-excursion (goto-char elem-end) (point-at-bol 2)))
     (org-appear--show-invisible elem)))
 
 (defun org-appear--hide-invisible (elem)
