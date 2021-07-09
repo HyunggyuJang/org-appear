@@ -152,7 +152,8 @@ on an element.")
 (defun org-appear--post-cmd ()
   "This function is executed by `post-command-hook' in `org-appear-mode'.
 It handles toggling elements depending on whether the cursor entered or exited them."
-  (let* ((prev-elem org-appear--prev-elem)
+  (unless (cl-find-if (lambda (o) (overlay-get o 'org-overlay-type)) (overlays-at (point)))
+   (let* ((prev-elem org-appear--prev-elem)
 	 (prev-elem-start (org-element-property :begin prev-elem))
 	 (current-elem (org-appear--current-elem))
 	 (current-elem-start (org-element-property :begin current-elem)))
@@ -188,7 +189,7 @@ It handles toggling elements depending on whether the cursor entered or exited t
 	(org-appear--show-with-lock current-elem)))
 
     ;; Remember current element as the last visited element
-    (setq org-appear--prev-elem current-elem)))
+    (setq org-appear--prev-elem current-elem))))
 
 (defun org-appear--pre-cmd ()
   "This function is executed by `pre-command-hook' in `org-appear-mode'.
