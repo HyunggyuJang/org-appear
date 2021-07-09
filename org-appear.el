@@ -267,25 +267,6 @@ Return nil if element cannot be parsed."
 			       ('script elem-content-end)
 			       ('link (or elem-content-end (- elem-end-real 2))))))))
 
-(defun org-appear--show-invisible (elem)
-  "Silently remove invisible property from invisible parts of element ELEM."
-  (let* ((elem-at-point (org-appear--parse-elem elem))
-	 (elem-type (car elem))
-	 (start (plist-get elem-at-point :start))
-	 (end (plist-get elem-at-point :end))
-	 (visible-start (plist-get elem-at-point :visible-start))
-	 (visible-end (plist-get elem-at-point :visible-end)))
-    (with-silent-modifications
-      (cond ((eq elem-type 'entity)
-	     (decompose-region start end))
-	    ((eq elem-type 'keyword)
-	     (remove-text-properties start end '(invisible org-link)))
-            ((memq elem-type '(latex-fragment latex-environment))
-             (remove-text-properties start end '(invisible composition)))
-	    (t
-	     (remove-text-properties start visible-start '(invisible org-link))
-	     (remove-text-properties visible-end end '(invisible org-link)))))))
-
 (defun org-appear--show-with-lock (elem &optional renew)
   "Show invisible parts of element ELEM.
 When RENEW is non-nil, obtain element at point instead."
@@ -295,12 +276,25 @@ When RENEW is non-nil, obtain element at point instead."
     (setq org-appear--prev-elem elem)
     (setq org-appear--timer nil))
 
-  (when-let ((elem-start (org-element-property :begin elem))
-	     (elem-end (org-element-property :end elem)))
+  (when-let* ((elem-at-point (org-appear--parse-elem elem))
+              (elem-type (car elem))
+              (start (plist-get elem-at-point :start))
+              (end (plist-get elem-at-point :end))
+              (visible-start (plist-get elem-at-point :visible-start))
+              (visible-end (plist-get elem-at-point :visible-end)))
     ;; Call `font-lock-ensure' before unhiding to prevent `jit-lock-mode'
     ;; from refontifying the element region after changes in buffer
-    (font-lock-ensure elem-start (save-excursion (goto-char elem-end) (point-at-bol 2)))
-    (org-appear--show-invisible elem)))
+    (font-lock-ensure start (save-excursion (goto-char end) (point-at-bol 2)))
+    (with-silent-modifications
+      (cond ((eq elem-type 'entity)
+             (decompose-region start end))
+            ((eq elem-type 'keyword)
+             (remove-text-properties start end '(invisible org-link)))
+            ((memq elem-type '(latex-fragment latex-environment))
+             (remove-text-properties start end '(invisible composition)))
+            (t
+             (remove-text-properties start visible-start '(invisible org-link))
+             (remove-text-properties visible-end end '(invisible org-link)))))))
 
 (defun org-appear--hide-invisible (elem)
   "Silently add invisible property to invisible parts of element ELEM."
