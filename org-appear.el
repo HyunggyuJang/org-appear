@@ -279,7 +279,7 @@ Return nil if element cannot be parsed."
 	     (decompose-region start end))
 	    ((eq elem-type 'keyword)
 	     (remove-text-properties start end '(invisible org-link)))
-            ((eq elem-type 'entity)
+            ((eq elem-type 'latex-fragment)
              (remove-text-properties start end '(invisible composition)))
 	    (t
 	     (remove-text-properties start visible-start '(invisible org-link))
