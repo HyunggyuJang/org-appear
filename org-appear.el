@@ -321,7 +321,9 @@ When RENEW is non-nil, obtain element at point instead."
       ;; (font-lock-flush start end)
       ;; Call `font-lock-ensure' after flushing to prevent `jit-lock-mode'
       ;; from refontifying the next element entered
-      (font-lock-ensure start end))))
+      ;; -> Seems like unncessary
+      ;; (font-lock-ensure start end)
+      )))
 
 (provide 'org-appear)
 ;;; org-appear.el ends here
