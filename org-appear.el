@@ -131,7 +131,7 @@ on an element.")
 	(entity-elements '(entity))
 	(link-elements '(link))
 	(keyword-elements '(keyword))
-	(latex-elements '(latex-fragment)))
+	(latex-elements '(latex-fragment latex-environment)))
 
     ;; HACK: is there a better way to do this?
     (setq-local org-appear--prev-elem nil)
@@ -241,8 +241,8 @@ Return nil if element cannot be parsed."
 			  'link)
 			 ((eq elem-type 'keyword)
 			  'keyword)
-			 ((memq elem-type '(latex-fragment latex-environment))
-			  'latex-fragment)
+                         ((memq elem-type '(latex-fragment latex-environment))
+                          'latex)
 			 (t nil)))
 	 (elem-start (org-element-property :begin elem))
 	 (elem-end (org-element-property :end elem))
@@ -279,7 +279,7 @@ Return nil if element cannot be parsed."
 	     (decompose-region start end))
 	    ((eq elem-type 'keyword)
 	     (remove-text-properties start end '(invisible org-link)))
-            ((eq elem-type 'latex-fragment)
+            ((memq elem-type '(latex-fragment latex-environment))
              (remove-text-properties start end '(invisible composition)))
 	    (t
 	     (remove-text-properties start visible-start '(invisible org-link))
@@ -313,7 +313,7 @@ When RENEW is non-nil, obtain element at point instead."
       (with-silent-modifications
 	(cond ((eq elem-type 'entity)
 	       (compose-region start end (org-element-property :utf-8 elem)))
-	      ((memq elem-type '(keyword latex-fragment))
+	      ((memq elem-type '(keyword latex-fragment latex-environment))
 	       (font-lock-flush start end))
 	      (t
 	       (put-text-property start visible-start 'invisible 'org-link)
