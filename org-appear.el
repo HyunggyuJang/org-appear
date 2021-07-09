@@ -152,44 +152,43 @@ on an element.")
 (defun org-appear--post-cmd ()
   "This function is executed by `post-command-hook' in `org-appear-mode'.
 It handles toggling elements depending on whether the cursor entered or exited them."
-  (unless (cl-find-if (lambda (o) (overlay-get o 'org-overlay-type)) (overlays-at (point)))
-   (let* ((prev-elem org-appear--prev-elem)
-	 (prev-elem-start (org-element-property :begin prev-elem))
-	 (current-elem (org-appear--current-elem))
-	 (current-elem-start (org-element-property :begin current-elem)))
+  (let* ((prev-elem org-appear--prev-elem)
+         (prev-elem-start (org-element-property :begin prev-elem))
+         (current-elem (org-appear--current-elem))
+         (current-elem-start (org-element-property :begin current-elem)))
 
     ;; After leaving an element
     (when (and prev-elem
-	       (not (equal prev-elem-start current-elem-start)))
+               (not (equal prev-elem-start current-elem-start)))
 
       ;; If timer for prev-elem fired and was expired
       (if (not org-appear--timer)
-	  (save-excursion
-	    (goto-char prev-elem-start)
-	    ;; Reevaluate `org-element-context' in case the bounds
-	    ;; of the previous element changed
-	    (org-appear--hide-invisible (org-element-context)))
-	(cancel-timer org-appear--timer)
-	(setq org-appear--timer nil)))
+          (save-excursion
+            (goto-char prev-elem-start)
+            ;; Reevaluate `org-element-context' in case the bounds
+            ;; of the previous element changed
+            (org-appear--hide-invisible (org-element-context)))
+        (cancel-timer org-appear--timer)
+        (setq org-appear--timer nil)))
 
     ;; Inside an element
     (when current-elem
 
       ;; New element, delay first unhiding
       (when (and (> org-appear-delay 0)
-		 (not (eq prev-elem-start current-elem-start)))
-	(setq org-appear--timer (run-with-idle-timer org-appear-delay
-						     nil
-						     #'org-appear--show-with-lock
-						     current-elem
-						     t)))
+                 (not (eq prev-elem-start current-elem-start)))
+        (setq org-appear--timer (run-with-idle-timer org-appear-delay
+                                                     nil
+                                                     #'org-appear--show-with-lock
+                                                     current-elem
+                                                     t)))
 
       ;; Not a new element
       (when (not org-appear--timer)
-	(org-appear--show-with-lock current-elem)))
+        (org-appear--show-with-lock current-elem)))
 
     ;; Remember current element as the last visited element
-    (setq org-appear--prev-elem current-elem))))
+    (setq org-appear--prev-elem current-elem)))
 
 (defun org-appear--pre-cmd ()
   "This function is executed by `pre-command-hook' in `org-appear-mode'.
@@ -225,34 +224,35 @@ Return nil if element is not supported by `org-appear-mode'."
 (defun org-appear--parse-elem (elem)
   "Return bounds of element ELEM.
 Return nil if element cannot be parsed."
-  (let* ((elem-type (car elem))
-	 (elem-tag (cond ((memq elem-type '(bold
-					    italic
-					    underline
-					    strike-through
-					    verbatim
-					    code))
-			  'emph)
-			 ((memq elem-type '(subscript
-					    superscript))
-			  'script)
-			 ((eq elem-type 'entity)
-			  'entity)
-			 ((eq elem-type 'link)
-			  'link)
-			 ((eq elem-type 'keyword)
-			  'keyword)
-                         ((memq elem-type '(latex-fragment latex-environment))
-                          'latex)
-			 (t nil)))
-	 (elem-start (org-element-property :begin elem))
+  (let* ((elem-start (org-element-property :begin elem))
 	 (elem-end (org-element-property :end elem))
 	 (elem-content-start (org-element-property :contents-begin elem))
 	 (elem-content-end (org-element-property :contents-end elem))
 	 ;; Some elements have extra spaces at the end
 	 ;; The number of spaces is stored in the post-blank property
 	 (post-elem-spaces (org-element-property :post-blank elem))
-	 (elem-end-real (- elem-end post-elem-spaces)))
+         (elem-type (car elem))
+         (elem-tag (cond ((memq elem-type '(bold
+                                            italic
+                                            underline
+                                            strike-through
+                                            verbatim
+                                            code))
+                          'emph)
+                         ((memq elem-type '(subscript
+                                            superscript))
+                          'script)
+                         ((eq elem-type 'entity)
+                          'entity)
+                         ((eq elem-type 'link)
+                          'link)
+                         ((eq elem-type 'keyword)
+                          'keyword)
+                         ((memq elem-type '(latex-fragment latex-environment))
+                          (unless (cl-find-if (lambda (o) (overlay-get o 'org-overlay-type)) (overlays-at elem-start))
+                            'latex))
+                         (t nil)))
+         (elem-end-real (- elem-end post-elem-spaces)))
     ;; Only sub/superscript elements are guaranteed to have
     ;; contents-begin and contents-end properties
     (when elem-tag
