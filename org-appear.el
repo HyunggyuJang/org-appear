@@ -241,7 +241,7 @@ Return nil if element cannot be parsed."
 			  'link)
 			 ((eq elem-type 'keyword)
 			  'keyword)
-			 ((eq elem-type 'latex-fragment)
+			 ((memq elem-type '(latex-fragment latex-environment))
 			  'latex-fragment)
 			 (t nil)))
 	 (elem-start (org-element-property :begin elem))
@@ -313,7 +313,7 @@ When RENEW is non-nil, obtain element at point instead."
       (with-silent-modifications
 	(cond ((eq elem-type 'entity)
 	       (compose-region start end (org-element-property :utf-8 elem)))
-	      ((or (eq elem-type 'keyword) (eq elem-type 'latex-fragment))
+	      ((memq elem-type '(keyword latex-fragment))
 	       (font-lock-flush start end))
 	      (t
 	       (put-text-property start visible-start 'invisible 'org-link)
