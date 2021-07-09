@@ -313,7 +313,7 @@ When RENEW is non-nil, obtain element at point instead."
       (with-silent-modifications
 	(cond ((eq elem-type 'entity)
 	       (compose-region start end (org-element-property :utf-8 elem)))
-	      ((eq elem-type 'keyword)
+	      ((or (eq elem-type 'keyword) (eq elem-type 'latex-fragment))
 	       (font-lock-flush start end))
 	      (t
 	       (put-text-property start visible-start 'invisible 'org-link)
