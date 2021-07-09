@@ -279,9 +279,7 @@ When RENEW is non-nil, obtain element at point instead."
   (when-let* ((elem-at-point (org-appear--parse-elem elem))
               (elem-type (car elem))
               (start (plist-get elem-at-point :start))
-              (end (plist-get elem-at-point :end))
-              (visible-start (plist-get elem-at-point :visible-start))
-              (visible-end (plist-get elem-at-point :visible-end)))
+              (end (plist-get elem-at-point :end)))
     ;; Call `font-lock-ensure' before unhiding to prevent `jit-lock-mode'
     ;; from refontifying the element region after changes in buffer
     (font-lock-ensure start (save-excursion (goto-char end) (point-at-bol 2)))
@@ -293,8 +291,10 @@ When RENEW is non-nil, obtain element at point instead."
             ((memq elem-type '(latex-fragment latex-environment))
              (remove-text-properties start end '(invisible composition)))
             (t
-             (remove-text-properties start visible-start '(invisible org-link))
-             (remove-text-properties visible-end end '(invisible org-link)))))))
+             (let ((visible-start (plist-get elem-at-point :visible-start))
+                   (visible-end (plist-get elem-at-point :visible-end)))
+               (remove-text-properties start visible-start '(invisible org-link))
+               (remove-text-properties visible-end end '(invisible org-link))))))))
 
 (defun org-appear--hide-invisible (elem)
   "Silently add invisible property to invisible parts of element ELEM."
