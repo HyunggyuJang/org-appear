@@ -153,8 +153,9 @@ It handles toggling elements depending on whether the cursor entered or exited t
          (current-elem (org-appear--current-elem))
          (current-elem-start (org-element-property :begin current-elem)))
 
-    ;; After leaving an element
-    (unless (eq prev-elem-start current-elem-start)
+    (if (eq prev-elem-start current-elem-start)
+        (org-appear--show-with-lock current-elem)
+      ;; After leaving an element
       (save-excursion
         (goto-char prev-elem-start)
         ;; Reevaluate `org-element-context' in case the bounds
