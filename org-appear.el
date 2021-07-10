@@ -76,13 +76,6 @@ Does not have an effect if `org-hidden-keywords' is nil."
   :type 'boolean
   :group 'org-appear)
 
-(defcustom org-appear-delay 0.0
-  "Number of seconds of delay before toggling an element."
-  :type 'number
-  :group 'org-appear)
-
-(defvar-local org-appear--timer nil
-  "Current active timer.")
 
 (defcustom org-appear-clearlatex nil
   "Non-nil enables automatic cleaning of Latex inline math blocks."
@@ -98,18 +91,12 @@ Does not have an effect if `org-hidden-keywords' is nil."
 
   (cond
    (org-appear-mode
-    (org-appear--set-elements)
-    (add-hook 'post-command-hook #'org-appear--post-cmd nil t)
-    (add-hook 'pre-command-hook #'org-appear--pre-cmd nil t))
+    (org-appear--set-elements))
    (t
     ;; Clean up current element when disabling the mode
     (when-let ((current-elem (org-appear--current-elem)))
       (org-appear--hide-invisible current-elem)
-      (when org-appear--timer
-	(cancel-timer org-appear--timer)
-	(setq org-appear--timer nil)))
-    (remove-hook 'post-command-hook #'org-appear--post-cmd t)
-    (remove-hook 'pre-command-hook #'org-appear--pre-cmd t))))
+      (remove-hook 'post-command-hook #'org-appear--post-cmd t)))))
 
 (defvar org-appear-elements nil
   "List of Org elements to toggle.")
@@ -149,6 +136,15 @@ on an element.")
     (when org-appear-clearlatex
       (setq org-appear-elements (append org-appear-elements latex-elements)))))
 
+(defun org-appear-unhide-at-point ()
+  "Unhide at current point."
+  (interactive)
+  (when-let ((current-elem (org-appear--current-elem)))
+    (when current-elem
+      (org-appear--show-with-lock current-elem))
+    (setq org-appear--prev-elem current-elem)
+    (add-hook 'post-command-hook #'org-appear--post-cmd nil t)))
+
 (defun org-appear--post-cmd ()
   "This function is executed by `post-command-hook' in `org-appear-mode'.
 It handles toggling elements depending on whether the cursor entered or exited them."
@@ -158,45 +154,13 @@ It handles toggling elements depending on whether the cursor entered or exited t
          (current-elem-start (org-element-property :begin current-elem)))
 
     ;; After leaving an element
-    (when (and prev-elem
-               (not (equal prev-elem-start current-elem-start)))
-
-      ;; If timer for prev-elem fired and was expired
-      (if (not org-appear--timer)
-          (save-excursion
-            (goto-char prev-elem-start)
-            ;; Reevaluate `org-element-context' in case the bounds
-            ;; of the previous element changed
-            (org-appear--hide-invisible (org-element-context)))
-        (cancel-timer org-appear--timer)
-        (setq org-appear--timer nil)))
-
-    ;; Inside an element
-    (when current-elem
-
-      ;; New element, delay first unhiding
-      (when (and (> org-appear-delay 0)
-                 (not (eq prev-elem-start current-elem-start)))
-        (setq org-appear--timer (run-with-idle-timer org-appear-delay
-                                                     nil
-                                                     #'org-appear--show-with-lock
-                                                     current-elem
-                                                     t)))
-
-      ;; Not a new element
-      (when (not org-appear--timer)
-        (org-appear--show-with-lock current-elem)))
-
-    ;; Remember current element as the last visited element
-    (setq org-appear--prev-elem current-elem)))
-
-(defun org-appear--pre-cmd ()
-  "This function is executed by `pre-command-hook' in `org-appear-mode'.
-It hides elements before commands that modify the buffer based on column width."
-  (when (memq this-command '(org-fill-paragraph
-			     org-ctrl-c-ctrl-c))
-    (when-let ((current-elem (org-appear--current-elem)))
-      (org-appear--hide-invisible current-elem))))
+    (unless (eq prev-elem-start current-elem-start)
+      (save-excursion
+        (goto-char prev-elem-start)
+        ;; Reevaluate `org-element-context' in case the bounds
+        ;; of the previous element changed
+        (org-appear--hide-invisible (org-element-context))
+        (remove-hook 'post-command-hook #'org-appear--post-cmd t)))))
 
 (defun org-appear--current-elem ()
   "Return element at point.
@@ -267,14 +231,10 @@ Return nil if element cannot be parsed."
 			       ('script elem-content-end)
 			       ('link (or elem-content-end (- elem-end-real 2))))))))
 
-(defun org-appear--show-with-lock (elem &optional renew)
+(defun org-appear--show-with-lock (elem)
   "Show invisible parts of element ELEM.
 When RENEW is non-nil, obtain element at point instead."
   ;; When called with timer, element might be different upon arrival
-  (when renew
-    (setq elem (org-appear--current-elem))
-    (setq org-appear--prev-elem elem)
-    (setq org-appear--timer nil))
 
   (when-let* ((elem-at-point (org-appear--parse-elem elem))
               (elem-type (car elem))
