@@ -153,7 +153,7 @@ It handles toggling elements depending on whether the cursor entered or exited t
          (current-elem (org-appear--current-elem))
          (current-elem-start (org-element-property :begin current-elem)))
 
-    (if (eq prev-elem-start current-elem-start)
+    (if (eq prev-elem-start current-elem-start) ;Cannot use `=' due to `nil'
         (org-appear--show-with-lock current-elem)
       ;; After leaving an element
       (save-excursion
@@ -245,12 +245,12 @@ When RENEW is non-nil, obtain element at point instead."
     ;; from refontifying the element region after changes in buffer
     (font-lock-ensure start (save-excursion (goto-char end) (point-at-bol 2)))
     (with-silent-modifications
-      (cond ((eq elem-type 'entity)
+      (cond ((memq elem-type '(latex-fragment latex-environment))
+             (remove-text-properties start end '(composition nil invisible)))
+            ((eq elem-type 'entity)
              (decompose-region start end))
             ((eq elem-type 'keyword)
              (remove-text-properties start end '(invisible org-link)))
-            ((memq elem-type '(latex-fragment latex-environment))
-             (remove-text-properties start end '(invisible composition)))
             (t
              (let ((visible-start (plist-get elem-at-point :visible-start))
                    (visible-end (plist-get elem-at-point :visible-end)))
