@@ -171,9 +171,10 @@ Return nil if element is not supported by `org-appear-mode'."
 	   (elem-end (- (org-element-property :end elem)
 			(1- (org-element-property :post-blank elem))))
 	   (link-ignore-p (and (eq elem-type 'link)
-			       (or (string-match-p "[Cc]ite"
-						   (org-element-property :type elem))
-				   (eq 'plain
+                               (or (org-link-get-parameter
+                                    (org-element-property :type elem)
+                                    :display)
+                                   (eq 'plain
 				       (org-element-property :format elem)))))
 	   (key-ignore-p (and (eq elem-type 'keyword)
 			      (not (memq (intern (downcase
